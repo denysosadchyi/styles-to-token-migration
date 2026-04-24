@@ -1,12 +1,18 @@
 # Styles → Token Migration
 
-Pipeline для міграції Figma-бібліотеки з **Paint Styles / захардкоджених кольорів** на **семантичні Variables** — з підтримкою перемикання тем (light / dark / brand).
-
-Все відбувається **всередині Figma**, без MCP і без ручного перепроставлення токенів по сотнях шарів.
+Мігрує Figma-бібліотеку з захардкоджених Paint Styles на семантичні Variables — так, щоб кожен шар кожного варіанту компонента був прив'язаний до токена, і зміна теми перемикалась одним кліком у Variables Panel.
 
 ---
 
-## Що це
+## Що робить
+
+- Сканує ComponentSet у Figma і витягує його структуру (кольори, варіанти, ролі шарів) у YAML-файл.
+- По YAML будує apply-скрипт, який проходить по всіх варіантах компонента і прив'язує Figma Variables до fills / strokes замість Paint Styles.
+- Веде каталог токенів у двох колекціях Figma Variables: `Primitives` (сирі кольори) і `Tokens` (семантичні aliases на primitives). Будь-який apply-скрипт працює тільки з `Tokens`.
+
+---
+
+## Як це працює
 
 ```
 Figma ComponentSet
@@ -18,7 +24,7 @@ Figma ComponentSet
 components/*.yaml                    ← семантична специфікація компонента
        │
        ▼
-[ LLM (Claude / GPT / будь-який) ]   ← заповнює token_map, генерує apply-скрипт
+[ Claude Code ]                      ← заповнює token_map, генерує apply-скрипт
        │
        ▼
 [ Scripter → apply-[component].js ]  ← виділи ComponentSet → Run
@@ -27,40 +33,19 @@ components/*.yaml                    ← семантична специфіка
 Figma Variables прив'язані ✅
 ```
 
-Одразу на виході: компонент, кожен варіант якого прив'язаний до семантичного токена. Перемикання mode у Variables Panel → тема міняється без ручних правок.
-
----
-
-## Чому не Figma MCP / не Token Studio
-
-- **Figma MCP** працює в одну сторону (дизайн → код). Він не мігрує саму design system, не розуміє контекстуальних ролей шарів і має жорсткі ліміти викликів.
-- **Token Studio** — це **імпорт** токенів у Figma, а не міграція існуючих компонентів з Paint Styles на Variables. Він не перепрошиває кожен варіант Component Set.
-
-Цей pipeline вирішує саме задачу **міграції існуючих компонентів** — там, де Variables ще не застосовано, а треба прив'язати їх без ручної роботи по тисячах шарів.
+Весь pipeline керується через **Claude Code**. У репо лежить `CLAUDE.md` з інструкціями для нього — склонуй репо, відкрий його в Claude Code, і він сам проведе через всі кроки: підготує токени під твою палітру, підкаже коли що запускати у Figma, згенерує YAML-аналіз і apply-скрипти для кожного компонента.
 
 ---
 
 ## Швидкий старт
 
-### 1. Встановити плагін Component → YAML
+```bash
+git clone https://github.com/denysosadchyi/styles-to-token-migration.git
+cd styles-to-token-migration
+claude
+```
 
-У Figma: `Plugins → Development → Import plugin from manifest...` → вибрати [`figma-plugin/manifest.json`](figma-plugin/manifest.json).
-
-→ Повна інструкція: [docs/02-plugin-install.md](docs/02-plugin-install.md)
-
-### 2. Підготувати токени (один раз на проект)
-
-1. Описати свої токени у `tokens/primitives.css` + `tokens/tokens.css` (приклад у [`examples/tokens/`](examples/tokens/))
-2. Перенести їх у Scripter-скрипт [`scripter/create-variables.js`](scripter/create-variables.js) (у вигляді JS-об'єктів `PRIMS` + `TOKENS`)
-3. Запустити у **Scripter** → створить дві колекції у Figma Variables: `Primitives` і `Tokens`
-
-### 3. Мігрувати компонент
-
-1. Плагін `Component → YAML` → `Scan` → скачати `button.yaml`
-2. Передати YAML у LLM: *«подивися на button.yaml і заповни token_map»*
-3. Отримати `apply-button-tokens.js` → виділити ComponentSet Button → **Run** у Scripter
-
-→ Покроковий процес: [docs/04-migration-workflow.md](docs/04-migration-workflow.md)
+Після запуску Claude Code скажи йому: **«давай почнемо міграцію»** — він прочитає `CLAUDE.md`, подивиться поточний стан і підкаже перший крок.
 
 ---
 
@@ -68,24 +53,25 @@ Figma Variables прив'язані ✅
 
 ```
 styles-to-token-migration/
-├── docs/                         — вся методологія
-│   ├── 01-architecture.md         — трирівнева токен-система (Primitives → Tokens → Variables)
-│   ├── 02-plugin-install.md       — встановлення плагіна
-│   ├── 03-plugin-usage.md         — робота з плагіном
-│   ├── 04-migration-workflow.md   — покрокова міграція одного компонента
-│   ├── 05-scripter-scripts.md     — довідник Scripter-скриптів
-│   └── 06-apply-script-rules.md   — правила написання apply-скриптів
+├── CLAUDE.md                        — інструкції для Claude Code (головний вхід)
+├── docs/                            — методологія
+│   ├── 01-architecture.md            — трирівнева токен-система
+│   ├── 02-plugin-install.md          — встановлення плагіна
+│   ├── 03-plugin-usage.md            — робота з плагіном
+│   ├── 04-migration-workflow.md      — покрокова міграція компонента
+│   ├── 05-scripter-scripts.md        — довідник Scripter-скриптів
+│   └── 06-apply-script-rules.md      — правила написання apply-скриптів
 │
-├── figma-plugin/                 — Figma plugin «Component → YAML»
+├── figma-plugin/                    — Figma plugin «Component → YAML»
 │   ├── manifest.json
 │   ├── code.js
 │   └── ui.html
 │
-├── scripter/                     — Figma Scripter скрипти (шаблони)
-│   ├── create-variables.js        — upsert Primitives + Tokens у Figma Variables
-│   └── apply-button-tokens.example.js  — приклад apply-скрипта
+├── scripter/                        — Figma Scripter скрипти
+│   ├── create-variables.js           — upsert Primitives + Tokens у Figma Variables
+│   └── apply-button-tokens.example.js
 │
-└── examples/                     — приклад токенів і YAML
+└── examples/                        — приклад токенів і YAML
     ├── tokens/
     │   ├── primitives.css
     │   └── tokens.css
@@ -97,11 +83,11 @@ styles-to-token-migration/
 
 ## Вимоги
 
+- **Claude Code** — [claude.com/claude-code](https://claude.com/claude-code)
 - **Figma Desktop / Web** з правами на редагування файлу
-- **Scripter** (Figma plugin) — безкоштовний, `Plugins → Browse plugins → Scripter`
-- Будь-який LLM-асистент (Claude Code / Cursor / ChatGPT) — для заповнення `token_map` і генерації apply-скриптів
+- **Scripter** — безкоштовний плагін Figma, `Plugins → Browse plugins → Scripter`
 
-Node.js / npm **не потрібні** — плагін і скрипти запускаються напряму у Figma.
+Node.js / npm не потрібні — плагін і скрипти запускаються напряму у Figma.
 
 ---
 

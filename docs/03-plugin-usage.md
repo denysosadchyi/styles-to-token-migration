@@ -94,7 +94,7 @@ quirks:
   - "State=Disabled → opacity: 0.5 на root — скрипт не чіпає opacity"
   - "border не має boundVar — setBoundVariable виконується вперше"
 
-# token_map — заповнити токенами вручну (або з допомогою LLM)
+# token_map — заповнити токенами вручну (або з допомогою Claude Code)
 token_map:
   Blue:
     Default:
@@ -134,10 +134,10 @@ missing_tokens: []
 - border, що є тільки в деяких Color-значеннях
 
 ### `token_map`
-Маппінг варіантів → токени. **Заповнюється вручну або LLM.** Плагін підставляє тільки підказки у вигляді `"TODO"` з коментарем `# rgb(...)` — щоб було зрозуміло який колір замінити.
+Маппінг варіантів → токени. **Заповнюється вручну або Claude Code.** Плагін підставляє тільки підказки у вигляді `"TODO"` з коментарем `# rgb(...)` — щоб було зрозуміло який колір замінити.
 
 ### `missing_tokens`
-Список токенів, яких ще немає в `tokens.css`. Заповнюється при аналізі LLM.
+Список токенів, яких ще немає в `tokens.css`. Заповнюється при аналізі Claude Code.
 
 ---
 
@@ -188,6 +188,6 @@ YAML матиме порожній `variants: {}` і один запис у `str
 
 1. Перемістити YAML у папку `components/` свого проекту
 2. Відкрити у редакторі
-3. Заповнити `token_map` — вручну або передати в LLM (див. [04-migration-workflow.md](04-migration-workflow.md))
+3. Заповнити `token_map` — вручну або передати в Claude Code (див. [04-migration-workflow.md](04-migration-workflow.md))
 4. Перевірити `missing_tokens` — якщо є, додати в `tokens.css`
-5. Попросити LLM згенерувати apply-скрипт
+5. Попросити Claude Code згенерувати apply-скрипт

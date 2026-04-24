@@ -14,7 +14,7 @@ Figma ComponentSet
 components/[component].yaml
        │
        ▼
-[ LLM (Claude / GPT / …) ]
+[ Claude Code ]
        │  аналізує YAML, підбирає токени
        ▼
 token_map заповнений + apply-скрипт
@@ -62,18 +62,17 @@ Scripter → відкрити scripter/create-variables.js → Run
 
 ---
 
-## Крок 2 — Заповнити `token_map` через LLM
+## Крок 2 — Заповнити `token_map` через Claude Code
 
-Відкрити YAML у LLM-асистенті (Claude Code, Cursor, ChatGPT) і написати:
+Сказати в чат Claude Code:
 
 ```
-Подивися на [component].yaml і заповни token_map.
-Контекст: tokens/tokens.css + scripter/create-variables.js.
+Подивися на components/[component].yaml і заповни token_map.
 ```
 
-LLM:
-- Прочитає структуру вузлів і кольорові підказки `# rgb(...)`
-- Порівняє з токенами в `tokens.css` / `create-variables.js`
+Claude Code:
+- Прочитає структуру вузлів і кольорові підказки `# rgb(...)` у YAML
+- Порівняє з токенами в `tokens/tokens.css` та `scripter/create-variables.js`
 - Заповнить `token_map` відповідними назвами токенів
 - Додасть нові токени в `missing_tokens` якщо потрібно
 
@@ -124,15 +123,13 @@ token_map:
 
 ## Крок 4 — Отримати apply-скрипт
 
-Написати LLM:
+Сказати в чат Claude Code:
 
 ```
 Зроби apply-скрипт для компонента [назва].
-Правила — у docs/06-apply-script-rules.md.
-Шаблон — у scripter/apply-button-tokens.example.js.
 ```
 
-LLM згенерує `scripter/apply-[component]-tokens.js`.
+Claude Code прочитає `docs/06-apply-script-rules.md`, візьме за шаблон `scripter/apply-button-tokens.example.js` і згенерує `scripter/apply-[component]-tokens.js`.
 
 ### Що робить apply-скрипт
 

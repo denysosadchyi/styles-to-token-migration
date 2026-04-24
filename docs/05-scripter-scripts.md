@@ -115,18 +115,15 @@ main();
 
 ---
 
-## Написання нового apply-скрипта через LLM
+## Написання нового apply-скрипта через Claude Code
 
-Попросити LLM:
+Сказати в чат:
 
 ```
 Зроби apply-скрипт для компонента [назва].
-Правила у docs/06-apply-script-rules.md.
-YAML у components/[назва].yaml.
-Шаблон у scripter/apply-button-tokens.example.js.
 ```
 
-LLM прочитає YAML і згенерує скрипт за шаблоном.
+Claude Code прочитає `components/[назва].yaml`, звірить з правилами у `docs/06-apply-script-rules.md` і згенерує скрипт за шаблоном `scripter/apply-button-tokens.example.js`.
 
 ---
 
