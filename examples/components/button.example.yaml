@@ -1,0 +1,106 @@
+# Компонент: Button  (ПРИКЛАД згенерованого плагіном YAML)
+# У реальності YAML створюється плагіном Component → YAML
+# з "TODO" у token_map — ти (або LLM) заповнюєш його.
+
+meta:
+  name: Button
+  figma_id: "76:17851"
+  type: COMPONENT_SET
+
+variants:
+  State: [Default, Hover Active, Disabled]
+  Color: [Blue, Light blue, Line blue, Line gray]
+  Size: [40, 36, 28]
+
+# role: bg | text | icon | border
+# paint: fill | stroke
+structure:
+  - node: "root"
+    type: COMPONENT
+    roles:
+      - role: bg
+        paint: fill
+      - role: border
+        paint: stroke
+        condition: "Color in [Line gray, Line blue]"
+  - node: "icon-right"
+    type: INSTANCE > VECTOR
+    roles:
+      - role: icon
+        paint: stroke
+  - node: "Button Label"
+    type: TEXT
+    roles:
+      - role: text
+        paint: fill
+
+quirks:
+  - "State=Disabled → opacity: 0.5 на root — скрипт не чіпає opacity"
+  - "border не має boundVar — setBoundVariable виконується вперше"
+
+# Color × State → токени з колекції "Tokens" у Figma Variables
+token_map:
+
+  Blue:
+    Default:
+      bg:     "Action/primary/bg-default"
+      text:   "Action/primary/text-default"
+      icon:   "Action/primary/icon-default"
+    Hover Active:
+      bg:     "Action/primary/bg-hover"
+      text:   "Action/primary/text-default"
+      icon:   "Action/primary/icon-default"
+    Disabled:
+      bg:     "Action/primary/bg-disabled"
+      text:   "Action/primary/text-disabled"
+      icon:   "Action/primary/icon-disabled"
+
+  Light blue:
+    Default:
+      bg:     "Action/secondary/bg-default"
+      text:   "Action/secondary/text-default"
+      icon:   "Action/secondary/icon-default"
+    Hover Active:
+      bg:     "Action/secondary/bg-hover"
+      text:   "Action/secondary/text-default"
+      icon:   "Action/secondary/icon-default"
+    Disabled:
+      bg:     "Action/secondary/bg-disabled"
+      text:   "Action/secondary/text-disabled"
+      icon:   "Action/secondary/icon-disabled"
+
+  Line blue:
+    Default:
+      bg:     "Action/ghost/bg-default"
+      border: "Action/ghost/border-default"
+      text:   "Action/ghost/text-default"
+      icon:   "Action/ghost/icon-default"
+    Hover Active:
+      bg:     "Action/ghost/bg-hover"
+      border: "Action/ghost/border-hover"
+      text:   "Action/ghost/text-hover"
+      icon:   "Action/ghost/icon-default"
+    Disabled:
+      bg:     "Action/ghost/bg-default"
+      border: "Action/ghost/border-disabled"
+      text:   "Action/ghost/text-disabled"
+      icon:   "Action/ghost/icon-disabled"
+
+  Line gray:
+    Default:
+      bg:     "Action/neutral/bg-default"
+      border: "Action/neutral/border-default"
+      text:   "Action/neutral/text-default"
+      icon:   "Action/neutral/icon-default"
+    Hover Active:
+      bg:     "Action/neutral/bg-hover"
+      border: "Action/neutral/border-hover"
+      text:   "Action/neutral/text-default"
+      icon:   "Action/neutral/icon-default"
+    Disabled:
+      bg:     "Action/neutral/bg-disabled"
+      border: "Action/neutral/border-disabled"
+      text:   "Action/neutral/text-disabled"
+      icon:   "Action/neutral/icon-disabled"
+
+missing_tokens: []

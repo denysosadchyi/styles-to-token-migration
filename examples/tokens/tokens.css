@@ -1,0 +1,182 @@
+/* ============================================================
+   SEMANTIC TOKENS — іменовані ролі
+   ============================================================
+   Кожен токен описує НАВІЩО колір, а не який він.
+   Це рівень, який реально застосовується у компонентах.
+
+   Значення повинні збігатися з об'єктом TOKENS
+   у scripter/create-variables.js.
+   ============================================================ */
+
+@import url('./primitives.css');
+
+:root {
+
+  /* ──────────────────────────────────────────────────────────
+     GLOBAL — базові ролі (не прив'язані до компонента)
+     ────────────────────────────────────────────────────────── */
+
+  /* Background */
+  --color-bg-page:         var(--color-gray-50);
+  --color-bg-default:      var(--color-neutral-white);
+  --color-bg-subtle:       var(--color-gray-100);
+  --color-bg-muted:        var(--color-gray-200);
+  --color-bg-inverse:      var(--color-gray-900);
+  --color-bg-overlay:      var(--color-gray-800);
+  --color-bg-brand:        var(--color-blue-500);
+  --color-bg-brand-subtle: var(--color-blue-50);
+
+  /* Text */
+  --color-text-primary:   var(--color-gray-900);
+  --color-text-secondary: var(--color-gray-600);
+  --color-text-tertiary:  var(--color-gray-400);
+  --color-text-disabled:  var(--color-gray-300);
+  --color-text-inverse:   var(--color-neutral-white);
+  --color-text-brand:     var(--color-blue-600);
+  --color-text-on-brand:  var(--color-neutral-white);
+
+  /* Icon */
+  --color-icon-primary:   var(--color-gray-900);
+  --color-icon-secondary: var(--color-gray-500);
+  --color-icon-disabled:  var(--color-gray-300);
+  --color-icon-inverse:   var(--color-neutral-white);
+  --color-icon-brand:     var(--color-blue-600);
+
+  /* Border */
+  --color-border-subtle:   var(--color-gray-100);
+  --color-border-default:  var(--color-gray-200);
+  --color-border-strong:   var(--color-gray-300);
+  --color-border-brand:    var(--color-blue-500);
+  --color-border-disabled: var(--color-gray-200);
+  --color-border-focus:    var(--color-blue-500);
+
+  /* ──────────────────────────────────────────────────────────
+     FEEDBACK — error / warning / success / info
+     ────────────────────────────────────────────────────────── */
+
+  /* Error */
+  --color-feedback-error-bg:       var(--color-red-100);
+  --color-feedback-error-bg-solid: var(--color-red-500);
+  --color-feedback-error-text:     var(--color-red-600);
+  --color-feedback-error-border:   var(--color-red-500);
+  --color-feedback-error-icon:     var(--color-red-500);
+
+  /* Warning */
+  --color-feedback-warning-bg:       var(--color-amber-100);
+  --color-feedback-warning-bg-solid: var(--color-amber-500);
+  --color-feedback-warning-text:     var(--color-amber-600);
+  --color-feedback-warning-border:   var(--color-amber-500);
+  --color-feedback-warning-icon:     var(--color-amber-500);
+
+  /* Success */
+  --color-feedback-success-bg:       var(--color-green-100);
+  --color-feedback-success-bg-solid: var(--color-green-500);
+  --color-feedback-success-text:     var(--color-green-600);
+  --color-feedback-success-border:   var(--color-green-500);
+  --color-feedback-success-icon:     var(--color-green-500);
+
+  /* Info */
+  --color-feedback-info-bg:       var(--color-blue-100);
+  --color-feedback-info-bg-solid: var(--color-blue-500);
+  --color-feedback-info-text:     var(--color-blue-600);
+  --color-feedback-info-border:   var(--color-blue-500);
+  --color-feedback-info-icon:     var(--color-blue-500);
+
+  /* ──────────────────────────────────────────────────────────
+     ACTION — кнопки
+     ────────────────────────────────────────────────────────── */
+
+  /* Primary — solid brand button */
+  --color-action-primary-bg-default:    var(--color-blue-500);
+  --color-action-primary-bg-hover:      var(--color-blue-600);
+  --color-action-primary-bg-active:     var(--color-blue-700);
+  --color-action-primary-bg-disabled:   var(--color-blue-500);
+  --color-action-primary-text-default:  var(--color-neutral-white);
+  --color-action-primary-text-disabled: var(--color-neutral-white);
+  --color-action-primary-icon-default:  var(--color-neutral-white);
+  --color-action-primary-icon-disabled: var(--color-neutral-white);
+
+  /* Secondary — soft-tinted button */
+  --color-action-secondary-bg-default:    var(--color-blue-50);
+  --color-action-secondary-bg-hover:      var(--color-blue-100);
+  --color-action-secondary-bg-active:     var(--color-blue-200);
+  --color-action-secondary-bg-disabled:   var(--color-blue-50);
+  --color-action-secondary-text-default:  var(--color-blue-700);
+  --color-action-secondary-text-disabled: var(--color-blue-700);
+  --color-action-secondary-icon-default:  var(--color-blue-700);
+  --color-action-secondary-icon-disabled: var(--color-blue-700);
+
+  /* Ghost — outlined brand button */
+  --color-action-ghost-bg-default:      var(--color-neutral-white);
+  --color-action-ghost-bg-hover:        var(--color-blue-50);
+  --color-action-ghost-bg-active:       var(--color-blue-100);
+  --color-action-ghost-border-default:  var(--color-blue-300);
+  --color-action-ghost-border-hover:    var(--color-blue-500);
+  --color-action-ghost-border-disabled: var(--color-blue-200);
+  --color-action-ghost-text-default:    var(--color-gray-900);
+  --color-action-ghost-text-hover:      var(--color-gray-900);
+  --color-action-ghost-text-disabled:   var(--color-gray-400);
+  --color-action-ghost-icon-default:    var(--color-gray-900);
+  --color-action-ghost-icon-disabled:   var(--color-gray-400);
+
+  /* Neutral — outlined neutral button */
+  --color-action-neutral-bg-default:      var(--color-neutral-white);
+  --color-action-neutral-bg-hover:        var(--color-gray-50);
+  --color-action-neutral-bg-active:       var(--color-gray-100);
+  --color-action-neutral-bg-disabled:     var(--color-neutral-white);
+  --color-action-neutral-border-default:  var(--color-gray-300);
+  --color-action-neutral-border-hover:    var(--color-gray-400);
+  --color-action-neutral-border-disabled: var(--color-gray-200);
+  --color-action-neutral-text-default:    var(--color-gray-900);
+  --color-action-neutral-text-disabled:   var(--color-gray-400);
+  --color-action-neutral-icon-default:    var(--color-gray-900);
+  --color-action-neutral-icon-disabled:   var(--color-gray-400);
+
+  /* Danger — destructive button */
+  --color-action-danger-bg-default:    var(--color-red-500);
+  --color-action-danger-bg-hover:      var(--color-red-600);
+  --color-action-danger-bg-active:     var(--color-red-700);
+  --color-action-danger-bg-disabled:   var(--color-gray-200);
+  --color-action-danger-text-default:  var(--color-neutral-white);
+  --color-action-danger-text-disabled: var(--color-gray-400);
+  --color-action-danger-border-default:var(--color-red-500);
+
+  /* ──────────────────────────────────────────────────────────
+     CONTROL — поля форм
+     ────────────────────────────────────────────────────────── */
+
+  /* Field — input / textarea / dropdown / search / datepicker */
+  --color-control-field-bg-default:       var(--color-neutral-white);
+  --color-control-field-bg-disabled:      var(--color-gray-50);
+  --color-control-field-border-default:   var(--color-gray-200);
+  --color-control-field-border-hover:     var(--color-gray-400);
+  --color-control-field-border-focus:     var(--color-blue-500);
+  --color-control-field-border-error:     var(--color-red-500);
+  --color-control-field-border-disabled:  var(--color-gray-200);
+  --color-control-field-text-default:     var(--color-gray-900);
+  --color-control-field-text-placeholder: var(--color-gray-400);
+  --color-control-field-text-disabled:    var(--color-gray-400);
+  --color-control-field-icon-default:     var(--color-gray-500);
+  --color-control-field-icon-active:      var(--color-blue-500);
+  --color-control-field-icon-disabled:    var(--color-gray-300);
+
+  /* Checkbox / Radio */
+  --color-control-checkbox-bg-default:     var(--color-neutral-white);
+  --color-control-checkbox-border-default: var(--color-gray-300);
+  --color-control-checkbox-bg-checked:     var(--color-blue-500);
+  --color-control-checkbox-border-checked: var(--color-blue-500);
+  --color-control-checkbox-icon:           var(--color-neutral-white);
+
+  /* ──────────────────────────────────────────────────────────
+     SELECTION — list item / cell / tab / sidebar menu item
+     ────────────────────────────────────────────────────────── */
+
+  --color-selection-bg-default:      transparent;
+  --color-selection-bg-hover:        var(--color-gray-50);
+  --color-selection-bg-active:       var(--color-gray-100);
+  --color-selection-bg-selected:     var(--color-blue-50);
+  --color-selection-text-default:    var(--color-gray-900);
+  --color-selection-text-selected:   var(--color-blue-600);
+  --color-selection-border-selected: var(--color-blue-500);
+  --color-selection-icon-selected:   var(--color-blue-500);
+}

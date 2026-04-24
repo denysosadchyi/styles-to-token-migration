@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #1c1c1c;
+  --surface: #252525;
+  --border:  #333;
+  --text:    #e0e0e0;
+  --muted:   #777;
+  --accent:  #4d7cff;
+  --acc-h:   #6690ff;
+  --ok:      #4caf86;
+  --error:   #ff6b6b;
+  --mono:    'Roboto Mono', 'Fira Code', 'Courier New', monospace;
+}
+
+html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 13px; line-height: 1.5; }
+
+.app { display: flex; flex-direction: column; height: 100vh; padding: 16px; gap: 12px; }
+
+/* ── Empty ── */
+#empty { flex: 1; display: flex; flex-direction: column;
+  justify-content: center; align-items: center; gap: 16px; text-align: center; }
+.empty-title { font-size: 15px; font-weight: 600; }
+.empty-desc  { font-size: 12px; color: var(--muted); max-width: 300px; line-height: 1.7; }
+
+/* ── Loading ── */
+#loading { flex: 1; display: none; flex-direction: column;
+  justify-content: center; align-items: center; gap: 12px; }
+.spinner { width: 24px; height: 24px; border: 2px solid var(--border);
+  border-top-color: var(--accent); border-radius: 50%;
+  animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-size: 12px; color: var(--muted); }
+
+/* ── Result ── */
+#result { flex: 1; display: none; flex-direction: column; gap: 10px; min-height: 0; }
+
+.summary { font-size: 13px; font-weight: 600; flex-shrink: 0;
+  display: flex; align-items: center; gap: 8px; }
+.badge { font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 10px;
+  background: var(--surface); border: 1px solid var(--border); color: var(--muted); }
+.badge-ok  { background: rgba(76,175,134,.12); border-color: rgba(76,175,134,.3); color: var(--ok); }
+.badge-err { background: rgba(255,107,107,.12); border-color: rgba(255,107,107,.3); color: var(--error); }
+
+.file-list { flex: 1; overflow-y: auto; min-height: 0;
+  border: 1px solid var(--border); border-radius: 6px; }
+.file-item { display: flex; align-items: center; gap: 8px;
+  padding: 7px 12px; border-bottom: 1px solid var(--border); }
+.file-item:last-child { border-bottom: none; }
+.dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.dot-ok  { background: var(--ok); }
+.dot-err { background: var(--error); }
+.file-name { font-family: var(--mono); font-size: 11.5px; flex: 1;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.file-err-msg { font-size: 10.5px; color: var(--error); font-family: var(--mono); }
+.btn-dl-single { flex-shrink: 0; width: 24px; height: 24px; border-radius: 4px;
+  background: none; border: 1px solid transparent; color: var(--muted);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 13px; line-height: 1; transition: border-color .12s, color .12s; }
+.btn-dl-single:hover { border-color: var(--border); color: var(--text); }
+
+.err-section { font-size: 11px; color: var(--error); flex-shrink: 0;
+  padding: 8px 10px; background: rgba(255,107,107,.07);
+  border: 1px solid rgba(255,107,107,.2); border-radius: 6px; display: none; }
+
+/* ── Shared ── */
+.err-inline { font-size: 12px; color: var(--error); min-height: 16px; }
+.row  { display: flex; gap: 8px; flex-shrink: 0; }
+.btn  { flex: 1; height: 34px; border-radius: 6px; font-size: 13px; font-weight: 500;
+  cursor: pointer; border: none; transition: background .12s; }
+.btn:active { opacity: .8; }
+.btn:disabled { opacity: .4; cursor: default; }
+.btn-ghost   { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+.btn-ghost:hover:not(:disabled) { border-color: #555; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: var(--acc-h); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Empty / Error -->
+  <div id="empty">
+    <div>
+      <div class="empty-title">Component → YAML</div>
+      <div class="empty-desc" style="margin-top:8px">
+        Знаходить усі ComponentSet на поточній сторінці Figma і генерує
+        YAML-специфікацію для кожного. Завантажте окремий файл або
+        все одразу як ZIP-архів.
+      </div>
+    </div>
+    <div class="err-inline" id="err"></div>
+    <div class="row" style="width:100%;max-width:280px">
+      <button class="btn btn-primary" id="btn-scan">Сканувати сторінку</button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loading-text">Сканую...</div>
+  </div>
+
+  <!-- Result -->
+  <div id="result">
+    <div class="summary">
+      <span id="sum-title">Результат</span>
+      <span class="badge badge-ok"  id="badge-ok"  style="display:none"></span>
+      <span class="badge badge-err" id="badge-err" style="display:none"></span>
+    </div>
+
+    <div class="file-list" id="file-list"></div>
+
+    <div class="err-section" id="err-section"></div>
+
+    <div class="row">
+      <button class="btn btn-ghost"   id="btn-back">← Назад</button>
+      <button class="btn btn-primary" id="btn-dl">Завантажити .zip</button>
+    </div>
+  </div>
+
+</div>
+<script>
+// ── State ──────────────────────────────────────────────────
+var zipFiles = [];
+
+function show(s) {
+  document.getElementById('empty').style.display   = s === 'empty'   ? 'flex' : 'none';
+  document.getElementById('loading').style.display = s === 'loading' ? 'flex' : 'none';
+  document.getElementById('result').style.display  = s === 'result'  ? 'flex' : 'none';
+}
+show('empty');
+
+// ── Plugin messages ────────────────────────────────────────
+window.onmessage = function (e) {
+  var m = e.data.pluginMessage;
+  if (!m) return;
+
+  if (m.type === 'result') {
+    zipFiles = m.files;
+    renderResult(m);
+  }
+  if (m.type === 'error') {
+    document.getElementById('err').textContent = m.message;
+    show('empty');
+  }
+};
+
+function renderResult(m) {
+  var ok  = m.files.length;
+  var err = m.errors.length;
+
+  // Summary
+  document.getElementById('sum-title').textContent =
+    'Сторінка: ' + m.pageName;
+
+  var badgeOk  = document.getElementById('badge-ok');
+  var badgeErr = document.getElementById('badge-err');
+  if (ok) {
+    badgeOk.textContent = ok + ' файл' + plural(ok);
+    badgeOk.style.display = '';
+  } else {
+    badgeOk.style.display = 'none';
+  }
+  if (err) {
+    badgeErr.textContent = err + ' помил' + pluralErr(err);
+    badgeErr.style.display = '';
+  } else {
+    badgeErr.style.display = 'none';
+  }
+
+  // File list
+  var list = document.getElementById('file-list');
+  list.innerHTML = '';
+  for (var i = 0; i < m.files.length; i++) {
+    (function(file) {
+      var item = document.createElement('div');
+      item.className = 'file-item';
+
+      var dot = document.createElement('span');
+      dot.className = 'dot dot-ok';
+
+      var name = document.createElement('span');
+      name.className = 'file-name';
+      name.title = file.name;
+      name.textContent = file.name;
+
+      var dlBtn = document.createElement('button');
+      dlBtn.className = 'btn-dl-single';
+      dlBtn.title = 'Завантажити ' + file.name;
+      dlBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 1v7M3 6l3 3 3-3M1 10h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      dlBtn.onclick = function() { downloadSingle(file); };
+
+      item.appendChild(dot);
+      item.appendChild(name);
+      item.appendChild(dlBtn);
+      list.appendChild(item);
+    })(m.files[i]);
+  }
+  for (var j = 0; j < m.errors.length; j++) {
+    var eitem = document.createElement('div');
+    eitem.className = 'file-item';
+    var edot = document.createElement('span');
+    edot.className = 'dot dot-err';
+    var ename = document.createElement('span');
+    ename.className = 'file-name';
+    ename.textContent = m.errors[j].name;
+    var emsg = document.createElement('span');
+    emsg.className = 'file-err-msg';
+    emsg.textContent = m.errors[j].message;
+    eitem.appendChild(edot);
+    eitem.appendChild(ename);
+    eitem.appendChild(emsg);
+    list.appendChild(eitem);
+  }
+
+  // Error section
+  var errSec = document.getElementById('err-section');
+  if (err) {
+    errSec.style.display = 'block';
+    errSec.textContent = err + ' компонент(ів) не вдалося обробити. Деталі — в списку вище.';
+  } else {
+    errSec.style.display = 'none';
+  }
+
+  // Download button
+  document.getElementById('btn-dl').disabled = ok === 0;
+
+  show('result');
+}
+
+function plural(n) {
+  if (n === 1) return '';
+  if (n >= 2 && n <= 4) return 'и';
+  return 'ів';
+}
+function pluralErr(n) {
+  if (n === 1) return 'ка';
+  if (n >= 2 && n <= 4) return 'ки';
+  return 'ок';
+}
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Buttons ────────────────────────────────────────────────
+document.getElementById('btn-scan').onclick = function () {
+  document.getElementById('err').textContent = '';
+  show('loading');
+  parent.postMessage({ pluginMessage: { type: 'scan' } }, '*');
+};
+document.getElementById('btn-back').onclick = function () { show('empty'); };
+document.getElementById('btn-dl').onclick   = downloadZip;
+
+// ── Завантаження одного файлу ──────────────────────────────
+function downloadSingle(file) {
+  try {
+    var blob = new Blob([file.content], { type: 'text/yaml' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href     = url;
+    a.download = file.name;
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  } catch (ex) {
+    document.getElementById('err-section').style.display = 'block';
+    document.getElementById('err-section').textContent = 'Download error: ' + ex.message;
+  }
+}
+
+// ── ZIP ────────────────────────────────────────────────────
+function downloadZip() {
+  if (!zipFiles.length) return;
+  try {
+    var data = makeZip(zipFiles);
+    var blob = new Blob([data], { type: 'application/zip' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'components.zip';
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  } catch (ex) {
+    document.getElementById('err-section').style.display = 'block';
+    document.getElementById('err-section').textContent = 'ZIP error: ' + ex.message;
+  }
+}
+
+// ── Minimal ZIP writer (STORE, no compression) ─────────────
+var CRC32_TABLE = (function () {
+  var t = new Uint32Array(256);
+  for (var i = 0; i < 256; i++) {
+    var c = i;
+    for (var j = 0; j < 8; j++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[i] = c;
+  }
+  return t;
+})();
+
+function crc32(bytes) {
+  var crc = 0xFFFFFFFF;
+  for (var i = 0; i < bytes.length; i++) {
+    crc = CRC32_TABLE[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
+  }
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+
+function u16(n) { return [n & 0xFF, (n >> 8) & 0xFF]; }
+function u32(n) { n = n >>> 0; return [n & 0xFF, (n >>> 8) & 0xFF, (n >>> 16) & 0xFF, (n >>> 24) & 0xFF]; }
+
+function toBytes(str) {
+  return new TextEncoder().encode(str);
+}
+
+function concat(arrays) {
+  var total = 0;
+  for (var i = 0; i < arrays.length; i++) total += arrays[i].length;
+  var out = new Uint8Array(total), pos = 0;
+  for (var j = 0; j < arrays.length; j++) { out.set(arrays[j], pos); pos += arrays[j].length; }
+  return out;
+}
+
+function arr(a) { return new Uint8Array(a); }
+
+function makeZip(files) {
+  var localParts  = [];  // [{bytes, nameLen}]
+  var cdParts     = [];  // [{bytes, nameLen}]
+  var offsets     = [];
+  var offset      = 0;
+
+  for (var i = 0; i < files.length; i++) {
+    var nameB = toBytes(files[i].name);
+    var dataB = toBytes(files[i].content);
+    var crc   = crc32(dataB);
+    var size  = dataB.length;
+
+    var lhArr = arr([].concat(
+      [0x50,0x4B,0x03,0x04],  // local file header sig
+      u16(20),                 // version needed
+      u16(0),                  // flags
+      u16(0),                  // compression: STORE
+      u16(0), u16(0),          // mod time, mod date
+      u32(crc),
+      u32(size), u32(size),    // compressed = uncompressed
+      u16(nameB.length),
+      u16(0)                   // extra length
+    ));
+
+    offsets.push(offset);
+    offset += lhArr.length + nameB.length + size;
+
+    localParts.push(concat([lhArr, nameB, dataB]));
+
+    var chArr = arr([].concat(
+      [0x50,0x4B,0x01,0x02],  // central dir sig
+      u16(20), u16(20),        // version made by, needed
+      u16(0), u16(0),          // flags, compression
+      u16(0), u16(0),          // mod time, date
+      u32(crc),
+      u32(size), u32(size),
+      u16(nameB.length),
+      u16(0), u16(0),          // extra, comment length
+      u16(0), u16(0),          // disk start, internal attr
+      u32(0),                  // external attr
+      u32(offsets[i])          // local header offset
+    ));
+
+    cdParts.push(concat([chArr, nameB]));
+  }
+
+  var cdOffset = offset;
+  var cdSize   = 0;
+  for (var k = 0; k < cdParts.length; k++) cdSize += cdParts[k].length;
+
+  var eocd = arr([].concat(
+    [0x50,0x4B,0x05,0x06],   // end of central dir sig
+    u16(0), u16(0),           // disk num, disk with CD
+    u16(files.length), u16(files.length),
+    u32(cdSize),
+    u32(cdOffset),
+    u16(0)                    // comment length
+  ));
+
+  return concat(localParts.concat(cdParts).concat([eocd]));
+}
+</script>
+</body>
+</html>
