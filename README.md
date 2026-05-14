@@ -1,5 +1,213 @@
 # Styles → Token Migration
 
+Migrates a Figma library from hardcoded Paint Styles to semantic Variables — so that every layer of every component variant is bound to a token, and switching themes happens with a single click in the Variables Panel.
+
+*Українська версія — [нижче](#styles-token-migration-ua).*
+
+---
+
+## What it does
+
+- Scans a ComponentSet in Figma and pulls its structure (colors, variants, layer roles) into a YAML file.
+- From the YAML it builds an apply-script that walks every component variant and binds Figma Variables to fills / strokes instead of Paint Styles.
+- Keeps a token catalog in two Figma Variables collections: `Primitives` (raw colors) and `Tokens` (semantic aliases over primitives). Any apply-script only works with `Tokens`.
+
+---
+
+## How it works
+
+```
+Figma ComponentSet
+       │
+       ▼
+[ Plugin Component → YAML ]          ← scans structure, colors, variants
+       │
+       ▼
+components/*.yaml                    ← semantic component spec
+       │
+       ▼
+[ Claude Code ]                      ← fills token_map, generates apply-script
+       │
+       ▼
+[ Scripter → apply-[component].js ]  ← select ComponentSet → Run
+       │
+       ▼
+Figma Variables bound ✅
+```
+
+The whole pipeline is driven through **Claude Code**. The repo ships with `CLAUDE.md` containing the instructions — clone the repo, open it in Claude Code, and it will walk you through every step itself.
+
+### Step 0 — Tokens (once per project)
+
+Two files — `tokens/primitives.css` (raw colors) and `tokens/tokens.css` (semantic aliases). The same values are duplicated as JS objects in `scripter/create-variables.js`.
+
+Running `create-variables.js` in Scripter creates two collections in Figma Variables:
+
+- `Primitives` — `Blue/500 = #3B82F6`, `Gray/900 = #111827`, …
+- `Tokens` — `Action/primary/bg-default → Primitives/Blue/500` (VARIABLE_ALIAS)
+
+Upsert by name: re-running doesn't duplicate variables, it only updates values.
+
+### Step 1 — Plugin pulls the component structure
+
+The **Component → YAML** plugin finds every ComponentSet on the current Figma page and builds a semantic YAML for each one. For every node it pulls:
+
+- layer type (COMPONENT / FRAME / TEXT / VECTOR / INSTANCE)
+- current fills and strokes (+ whether there was a `boundVariable` before)
+- all `variantProperties` and their values
+- `opacity` if it differs from 1
+
+It then classifies nodes by roles (`bg` / `border` / `text` / `icon`) and surfaces *quirks* — non-trivial behavioral cases: `opacity: 0.5` on Disabled, a border that only appears for certain Color values, a wrapper pattern `COMPONENT > FRAME-wrapper > FRAME-field`.
+
+The result is a file like:
+
+```yaml
+meta:
+  name: Button
+  figma_id: "76:17851"
+
+variants:
+  Color: [Blue, Light blue, Line blue, Line gray]
+  State: [Default, Hover Active, Disabled]
+
+structure:
+  - node: "root"
+    type: COMPONENT
+    roles:
+      - role: bg
+        paint: fill
+      - role: border
+        paint: stroke
+        condition: "Color in [Line blue, Line gray]"
+  - node: "Button Label"
+    type: TEXT
+    roles:
+      - { role: text, paint: fill }
+
+quirks:
+  - "State=Disabled → opacity: 0.5 on root — the script does not touch opacity"
+
+token_map:
+  Blue:
+    Default:
+      bg:   "TODO"   # rgb(59,130,246)
+      text: "TODO"   # rgb(255,255,255)
+    …
+```
+
+`token_map` is filled in separately; the plugin only substitutes current RGB as a hint.
+
+### Step 2 — Claude Code fills the token_map
+
+Claude Code reads `components/[component].yaml`, takes the list of available tokens from `scripter/create-variables.js`, and for every `Color × State` combination picks a semantic token by layer role.
+
+The key logic is **contextual mapping, not color matching by hex**:
+
+```
+rgb(59,130,246) on a button bg            →  Action/primary/bg-default
+rgb(59,130,246) on an outlined border     →  Action/ghost/border-default
+rgb(59,130,246) on link text              →  Global/text/brand
+```
+
+If there's no token for a color — it writes it into `missing_tokens`, asks you to add the token to `tokens.css` + `create-variables.js` and re-run the variables script.
+
+If `quirks` contains `"opacity: 0.5 on root"` — for Disabled it applies the same tokens as Default (the "disabled" look is achieved by the opacity at the component level itself).
+
+### Step 3 — Claude Code generates the apply-script
+
+Based on the filled `token_map` and the rules in `docs/06-apply-script-rules.md`, Claude Code writes `scripter/apply-[component]-tokens.js`. The script has a rigid structure:
+
+1. **`TOKEN_MAP`** — a mirror of `token_map` from YAML, but ready for JS
+2. **Utilities** — `findFirst` / `findAll` / `findFirstWhere` / `bindFill` / `bindStroke` (recursive search + Variable binding to `fills` / `strokes`)
+3. **`main()`** — takes the ComponentSet from the selection (auto-lifting from a variant to its parent), iterates variants, finds layers by role for each one and binds the corresponding token
+
+Per-role logic differs:
+
+- `bg` — always `fill` on the `variant` (root COMPONENT node)
+- `border` — `stroke` on the `variant`, but if the token_map entry is `null` → mandatory `variant.strokes = []` (otherwise the old gray stroke from a previous variant will remain)
+- `text` — recursive search for a TEXT node by name, doesn't crash if not found
+- `icon` — `findAll(variant, 'VECTOR')` and binding to every VECTOR (both `fills` and `strokes`), because a single icon = several paths, and a button can have two icons on the left and right
+
+### Step 4 — Scripter applies
+
+In Figma: open Scripter, paste the contents of `apply-[component]-tokens.js`, select the ComponentSet (or a single variant — the script will lift to the parent itself), press **Run**.
+
+The script walks all variants, clears `fillStyleId` / `strokeStyleId` (dropping the Paint Style) via the Figma Plugin API and sets `setBoundVariableForPaint(..., variable)` — that's how a new Variable is bound in place of the style.
+
+In the Scripter console you'll get a log for each variant (`✓ Blue / Default / 40`) plus a summary `Processed: N, Errors: 0`.
+
+### Result
+
+- Select any component variant → in the Fill / Stroke panel you'll see a variable icon and the token name (`Action/primary/bg-default`) instead of a hex color.
+- Switch the mode in the Variables Panel (light ↔ dark ↔ brand) — all bound layers adapt automatically, with no manual fixes in the component.
+- A developer opening the component via Figma Dev Mode / MCP / Cursor sees token names instead of hardcoded values — and can directly use the CSS variable `--color-action-primary-bg-default` in code.
+
+---
+
+## Quick start
+
+```bash
+git clone https://github.com/denysosadchyi/styles-to-token-migration.git
+cd styles-to-token-migration
+claude
+```
+
+After Claude Code starts, tell it: **"let's start the migration"** — it will read `CLAUDE.md`, look at the current state and suggest the first step.
+
+---
+
+## Repo structure
+
+```
+styles-to-token-migration/
+├── CLAUDE.md                        — instructions for Claude Code (main entry point)
+├── docs/                            — methodology
+│   ├── 01-architecture.md            — three-level token system
+│   ├── 02-plugin-install.md          — plugin installation
+│   ├── 03-plugin-usage.md            — working with the plugin
+│   ├── 04-migration-workflow.md      — step-by-step component migration
+│   ├── 05-scripter-scripts.md        — Scripter scripts reference
+│   └── 06-apply-script-rules.md      — rules for writing apply-scripts
+│
+├── figma-plugin/                    — Figma plugin "Component → YAML"
+│   ├── manifest.json
+│   ├── code.js
+│   └── ui.html
+│
+├── scripter/                        — Figma Scripter scripts
+│   ├── create-variables.js           — upsert Primitives + Tokens into Figma Variables
+│   └── apply-button-tokens.example.js
+│
+└── examples/                        — example tokens and YAML
+    ├── tokens/
+    │   ├── primitives.css
+    │   └── tokens.css
+    └── components/
+        └── button.example.yaml
+```
+
+---
+
+## Requirements
+
+- **Claude Code** — [claude.com/claude-code](https://claude.com/claude-code)
+- **Figma Desktop / Web** with edit rights on the file
+- **Scripter** — a free Figma plugin, `Plugins → Browse plugins → Scripter`
+
+Node.js / npm are not required — the plugin and scripts run directly inside Figma.
+
+---
+
+## License
+
+[MIT](LICENSE)
+
+---
+
+<a id="styles-token-migration-ua"></a>
+
+# Styles → Token Migration (UA)
+
 Мігрує Figma-бібліотеку з захардкоджених Paint Styles на семантичні Variables — так, щоб кожен шар кожного варіанту компонента був прив'язаний до токена, і зміна теми перемикалась одним кліком у Variables Panel.
 
 ---
